@@ -1,8 +1,8 @@
 import datetime
-
 import psycopg2
 from psycopg2 import Error
 from abc import ABC
+from Settings import SettingsDb
 from Utils import Utils
 from models.Models import Pars
 
@@ -29,6 +29,8 @@ class DataBaseStandart(ABC):
 
 
 class DataBasePg(DataBaseStandart):
+    __SETTINGS = SettingsDb().get_settings_db()
+
     def get_stat(self, date_from=None, date_to=None):
         self.conn_open_close(1)
         c = self.CONN.cursor()
@@ -38,7 +40,6 @@ class DataBasePg(DataBaseStandart):
             c.execute('SELECT st_requests, st_date FROM STATICS WHERE date(st_date) >= date(%s) and date(st_date) <= date(%s)', (date_from, date_to))
         result = c.fetchall()
         c.close()
-        self.conn_open_close(0)
         return result
 
     def insert_stat(self, date):
@@ -52,7 +53,6 @@ class DataBasePg(DataBaseStandart):
             c.execute('UPDATE STATICS SET st_requests = %s WHERE st_date = %s', (res[0]+1, date))
         self.CONN.commit()
         c.close()
-        self.conn_open_close(0)
 
     def update_message_id(self, message_id, tg_id):
         self.conn_open_close(1)
@@ -60,7 +60,6 @@ class DataBasePg(DataBaseStandart):
         c.execute('UPDATE USERS SET message_id = %s where tg_id = %s', (message_id, tg_id))
         self.CONN.commit()
         c.close()
-        self.conn_open_close(0)
 
     def delete_timetables_date(self, date):
         self.conn_open_close(1)
@@ -69,7 +68,6 @@ class DataBasePg(DataBaseStandart):
             c.execute('DELETE FROM TIMETABLES where date_lesson = %s', (date,))
         self.CONN.commit()
         c.close()
-        self.conn_open_close(0)
 
     def insert_timetables(self, par):
         self.conn_open_close(1)
@@ -110,7 +108,6 @@ class DataBasePg(DataBaseStandart):
                   'values (%s,%s,%s,%s,%s,%s)', (id_lesson, id_teacher, id_time, 1, id_group, par.date_lesson))
         self.CONN.commit()
         c.close()
-        self.conn_open_close(0)
 
     def get_all_info_about_user(self, tg_id):
         self.conn_open_close(1)
@@ -120,7 +117,6 @@ class DataBasePg(DataBaseStandart):
             (tg_id,))
         result = c.fetchone()
         c.close()
-        self.conn_open_close(0)
         return result
 
     def get_all_groups(self):
@@ -129,7 +125,6 @@ class DataBasePg(DataBaseStandart):
         c.execute('SELECT name FROM GROUPS')
         result = c.fetchall()
         c.close()
-        self.conn_open_close(0)
         return result
 
     def set_group_and_tg_id_user(self, group, username, tg_id):
@@ -147,7 +142,6 @@ class DataBasePg(DataBaseStandart):
             c.execute('UPDATE USERS set id_group = %s where tg_id = %s', (id_group, tg_id))
         self.CONN.commit()
         c.close()
-        self.conn_open_close(0)
 
     def insert_users(self, username, is_admin=0, is_only_tgid=None, id_group=None):
         self.conn_open_close(1)
@@ -168,25 +162,26 @@ class DataBasePg(DataBaseStandart):
             c.execute('INSERT INTO USERS (tg_username, is_admin) VALUES (%s, %s)', (username, is_admin))
         self.CONN.commit()
         c.close()
-        self.conn_open_close(0)
 
-    def get_next_date(self, flag, date):
+    def get_next_date(self, flag, date, tg_id):
         self.conn_open_close(1)
         c = self.CONN.cursor()
         result = ''
 
+        c.execute('SELECT id_group FROM USERS where tg_id = %s', (tg_id,))
+        id_group = c.fetchone()[0]
+
         if flag == '1':
             c.execute(
-                'SELECT DISTINCT date_lesson FROM TIMETABLES where date(date_lesson) > date(%s) order by date_lesson',
-                (date,))
+                'SELECT DISTINCT date_lesson FROM TIMETABLES where date(date_lesson) > date(%s) and id_group = %s order by date_lesson',
+                (date, id_group))
             result = c.fetchone()
         elif flag == '0':
             c.execute(
-                'SELECT DISTINCT date_lesson FROM TIMETABLES where date(date_lesson) < date(%s) order by date_lesson desc',
-                (date,))
+                'SELECT DISTINCT date_lesson FROM TIMETABLES where date(date_lesson) < date(%s) and id_group = %s order by date_lesson desc',
+                (date, id_group))
             result = c.fetchone()
         c.close()
-        self.conn_open_close(0)
 
         if result is None:
             return None
@@ -199,7 +194,6 @@ class DataBasePg(DataBaseStandart):
         c.execute('SELECT DISTINCT date_lesson FROM TIMETABLES')
         result = c.fetchall()
         c.close()
-        self.conn_open_close(0)
         return result
 
     def get_timetable(self, tg_id, date=None):
@@ -230,7 +224,6 @@ class DataBasePg(DataBaseStandart):
             (date, id_group))
         result = c.fetchall()
         c.close()
-        self.conn_open_close(0)
 
         data_pars = []
         for par in result:
@@ -247,7 +240,6 @@ class DataBasePg(DataBaseStandart):
             (date, id_group))
         result = c.fetchall()
         c.close()
-        self.conn_open_close(0)
 
         data_pars = []
         for par in result:
@@ -260,7 +252,6 @@ class DataBasePg(DataBaseStandart):
         c.execute('SELECT is_admin FROM USERS WHERE tg_id = %s', (tg_id,))
         result = c.fetchone()[0]
         c.close()
-        self.conn_open_close(0)
         return result
 
     def is_user(self, tg_id=None, username=None):
@@ -274,7 +265,6 @@ class DataBasePg(DataBaseStandart):
             c.execute('SELECT TG_ID FROM USERS WHERE tg_username = %s', (username,))
             result = c.fetchone()
         c.close()
-        self.conn_open_close(0)
         if result is not None:
             return True
         return False
@@ -285,7 +275,6 @@ class DataBasePg(DataBaseStandart):
         c.execute('SELECT tg_id FROM USERS WHERE tg_id is not null')
         result = c.fetchall()
         c.close()
-        self.conn_open_close(0)
         return result
 
     def get_all_corp(self):
@@ -294,7 +283,6 @@ class DataBasePg(DataBaseStandart):
         c.execute('SELECT body FROM CORPS')
         result = c.fetchall()
         c.close()
-        self.conn_open_close(0)
         return result
 
     def insert_init(self):
@@ -323,18 +311,17 @@ class DataBasePg(DataBaseStandart):
             pass
 
         c.close()
-        self.conn_open_close(0)
 
     def conn_open_close(self, stat):
         if stat == 1:
-            self.CONN = psycopg2.connect(dbname='HSE', user='hse_users', password='hse_users_password',
-                                         host='localhost')
+            self.CONN = psycopg2.connect(dbname=self.__SETTINGS['db_name'], user=self.__SETTINGS['db_user'],
+                                         password=self.__SETTINGS['db_password'], host=self.__SETTINGS['host'])
         else:
             self.CONN.close()
 
     def create_tables(self):
+        self.conn_open_close(1)
         try:
-            self.conn_open_close(1)
             c = self.CONN.cursor()
             c.execute(f'{self.CREATE_TABLE} STATICS (id SERIAL {self.PK}, st_requests {self.INT}, st_date {self.TEXT})')
             c.execute(f'{self.CREATE_TABLE} CORPS (id SERIAL {self.PK}, body {self.TEXT})')
@@ -361,10 +348,12 @@ class DataBasePg(DataBaseStandart):
             #c.execute(f'{self.CREATE_TABLE} subscriptions (tg_id {self.INT}, time {self.TEXT},)')
             self.CONN.commit()
             c.close()
-            self.conn_open_close(0)
         except Error as e:
             pass
 
     def __init__(self):
         self.create_tables()
         self.insert_init()
+
+    def __del__(self):
+        self.conn_open_close(0)

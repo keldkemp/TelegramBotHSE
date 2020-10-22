@@ -1,9 +1,10 @@
+import threading
 from DataBasePG import DataBasePg
 from HseTelegram import HseTelegram
 from Logging import Logging
+from Settings import SettingsTelegram
 from Statics import Statics
 from Telegram import TelegramApi
-import threading
 from Utils import Utils
 
 
@@ -89,12 +90,14 @@ def razbor(last_chat_id, call_back_id, username, last_text, message_id):
             hseTelegram.get_all_corps(last_chat_id=last_chat_id)
         elif last_text.lower().find('add') != -1 and db.is_admin(last_chat_id) == 1:
             hseTelegram.add_users(last_chat_id=last_chat_id, last_text=last_text)
-        elif last_text.lower().find('sendAllMsg') != -1 and db.is_admin(last_chat_id) == 1:
+        elif last_text.lower().find('sendallmsg') != -1 and db.is_admin(last_chat_id) == 1:
             indx = last_text.find(' ')
             msg = last_text[indx + 1:]
             hseTelegram.send_all_users_msg(msg)
         elif last_text.lower().find('statics') != -1 and db.is_admin(last_chat_id) == 1:
-            hseTelegram.get_stat(last_chat_id)
+            hseTelegram.get_stat(last_chat_id=last_chat_id)
+        elif last_text.lower().find('updatetimetable') != -1 and db.is_admin(last_chat_id) == 1:
+            hseTelegram.update_timetable(last_chat_id=last_chat_id)
         else:
             telegram.send_msg(last_chat_id, 'main', telegram.main_keyboard)
     else:
@@ -105,7 +108,8 @@ if __name__ == '__main__':
     db = DataBasePg()
     log = Logging()
     statics = Statics(db)
-    telegram = TelegramApi('1335103458:AAGBuBclJZ_rjS9RatFyCFzC0yFMWqQ_pjo')
+    settings = SettingsTelegram().get_settings_tg()
+    telegram = TelegramApi(settings['token'])
     hseTelegram = HseTelegram(db, telegram)
     offset = None
     call_back_id = None

@@ -1,3 +1,5 @@
+import subprocess
+import sys
 from DataBasePG import DataBasePg
 from Telegram import TelegramApi
 from Utils import Utils
@@ -26,6 +28,13 @@ class HseTelegram:
     def set_scheduler(self, last_chat_id):
         # TODO: Кастомные уведомления
         pass
+
+    def update_timetable(self, last_chat_id):
+        try:
+            subprocess.Popen([sys.executable, 'UpdateTimeTable.py'])
+            self.__telegram.send_msg(last_chat_id, 'Расписание обновлено!')
+        except Exception as e:
+            self.__log.input_log(Utils.get_date_now_sec() + ' ' + str(e))
 
     def get_stat(self, last_chat_id):
         try:
@@ -68,7 +77,7 @@ class HseTelegram:
             date_r = txt[3]
             message__id = int(txt[2])
 
-            date = self.__db.get_next_date(flag, date_r)
+            date = self.__db.get_next_date(flag, date_r, last_chat_id)
             if date is None:
                 if flag == '1':
                     msg = 'На более позднии даты расписания нет'
@@ -95,9 +104,9 @@ class HseTelegram:
                 i = 1
                 for par in timetable:
                     if i == 1:
-                        msg = f'Расписание на {par.date_lesson}\n\n'
+                        msg = f'Расписание на <b>{par.date_lesson}</b>\n\n'
                     lesson = par.lesson.replace('\n', ' ')
-                    msg += f'{i}) {lesson} - {par.teacher} - {par.time}\n'
+                    msg += f'{i}) <b>{par.time}</b> - {lesson} - {par.teacher}\n'
                     i += 1
             key = '{"inline_keyboard": [[{"text": "⬅", "callback_data": "par_dates_list 0 %i %s"}, {"text": "➡", ' \
                   '"callback_data": "par_dates_list 1 %i %s"}]]}' % (
@@ -121,9 +130,9 @@ class HseTelegram:
                 i = 1
                 for par in timetable:
                     if i == 1:
-                        msg = f'Расписание на {par.date_lesson}\n\n'
+                        msg = f'Расписание на <b>{par.date_lesson}</b>\n\n'
                     lesson = par.lesson.replace('\n', ' ')
-                    msg += f'{i}) {lesson} - {par.teacher} - {par.time}\n'
+                    msg += f'{i}) <b>{par.time}</b> - {lesson} - {par.teacher}\n'
                     i += 1
 
             key = '{"inline_keyboard": [[{"text": "⬅", "callback_data": "par_dates_list 0 %i %s"}, {"text": "➡", ' \

@@ -1,7 +1,20 @@
 import datetime
+import os
+from win32com.client import Dispatch
 
 
 class Utils:
+
+    @staticmethod
+    def convert_xls_to_xlsx(file_name, new_file_name):
+        xlApp = Dispatch('Excel.Application')
+        xlApp.Visible = 0
+        xlApp.DisplayAlerts = False
+        xlApp.Workbooks.Open(os.path.abspath(file_name))  # An xls file.
+        xlApp.ActiveWorkbook.SaveAs(os.getcwd() + '\\' + new_file_name, FileFormat=51,
+                                    ConflictResolution=2)  # 51=xlsx, 2=overwrite
+        xlApp.ActiveWorkbook.Close()
+        xlApp.Quit()
 
     @staticmethod
     def get_date_now_sec() -> str:

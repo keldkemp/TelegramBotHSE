@@ -1,11 +1,12 @@
-from DataBase import DataBase
 from DataBasePG import DataBasePg
+from Settings import SettingsTelegram
 from Telegram import TelegramApi
 from get_files import HSE
 
 hse = HSE()
 db = DataBasePg()
-tg = TelegramApi('1335103458:AAGBuBclJZ_rjS9RatFyCFzC0yFMWqQ_pjo')
+setting = SettingsTelegram().get_settings_tg()
+tg = TelegramApi(setting['token'])
 admin_id = 453256909
 
 try:

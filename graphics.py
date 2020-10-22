@@ -1,4 +1,7 @@
+import threading
+
 import matplotlib.pyplot as plt
+
 from DataBasePG import DataBasePg
 
 

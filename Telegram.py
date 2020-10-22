@@ -1,10 +1,9 @@
 import requests
 import json
-from DataBase import DataBase
 
 
 class TelegramApi:
-    TOKEN = None
+    __TOKEN = None
     BASE_URL = 'https://api.telegram.org/bot'
     session = requests.session()
 
@@ -42,5 +41,5 @@ class TelegramApi:
         return json.loads(r.text)
 
     def __init__(self, token):
-        self.TOKEN = token
-        self.BASE_URL = self.BASE_URL + self.TOKEN + '/'
+        self.__TOKEN = token
+        self.BASE_URL = self.BASE_URL + self.__TOKEN + '/'
