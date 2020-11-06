@@ -1,0 +1,7 @@
+{
+  "telegram_token": "1335103458:AAGBuBclJZ_rjS9RatFyCFzC0yFMWqQ_pjo",
+  "db_name": "HSE",
+  "db_user": "hse_users",
+  "db_password": "hse_users_password",
+  "host": "localhost"
+}

@@ -4,7 +4,7 @@ import os
 from bs4 import BeautifulSoup
 from datetime import datetime
 from openpyxl.utils import range_boundaries
-from Utils import Utils
+from Utils.Utils import Utils
 from models.Models import Pars
 from openpyxl import load_workbook
 

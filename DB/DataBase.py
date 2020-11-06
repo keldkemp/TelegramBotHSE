@@ -1,9 +1,7 @@
 import sqlite3
 from sqlite3 import Error
 from abc import ABC
-import datetime
-
-from Utils import Utils
+from Utils.Utils import Utils
 from models.Models import Pars
 
 

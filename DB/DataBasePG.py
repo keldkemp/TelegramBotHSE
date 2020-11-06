@@ -3,7 +3,7 @@ import psycopg2
 from psycopg2 import Error
 from abc import ABC
 from Settings import SettingsDb
-from Utils import Utils
+from Utils.Utils import Utils
 from models.Models import Pars
 
 

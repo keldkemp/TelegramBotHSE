@@ -1,11 +1,47 @@
 import threading
 from DB.DataBasePG import DataBasePg
 from HseUtils.HseTelegram import HseTelegram
-from Utils.Logging import Logging
 from Settings import SettingsTelegram
-from Utils.Statics import Statics
 from Telegram import TelegramApi
+from Utils.Logging import Logging
+from Utils.Statics import Statics
 from Utils.Utils import Utils
+
+dict_res1 = {
+    'update_id': 477824114,
+    'message': {
+        'message_id': 2249, 'from': {
+            'id': 453256909, 'is_bot': False, 'first_name': 'Илья', 'last_name': 'Логинов', 'username': 'KeldKemp',
+            'language_code': 'ru'
+        }, 'chat': {
+            'id': 453256909, 'first_name': 'Илья', 'last_name': 'Логинов', 'username': 'KeldKemp', 'type': 'private'
+        }, 'date': 1603435155, 'text': 'Расписание'
+    }
+}
+
+dict_res2 = {
+    'update_id': 477824114,
+    'message': {
+        'message_id': 2249, 'from': {
+            'id': 453256909, 'is_bot': False, 'first_name': 'Илья', 'last_name': 'Логинов', 'username': 'KeldKemp',
+            'language_code': 'ru'
+        }, 'chat': {
+            'id': 453256909, 'first_name': 'Илья', 'last_name': 'Логинов', 'username': 'KeldKemp', 'type': 'private'
+        }, 'date': 1603435155, 'text': 'Настройки'
+    }
+}
+
+dict_res3 = {
+    'update_id': 477824114,
+    'message': {
+        'message_id': 2249, 'from': {
+            'id': 453256909, 'is_bot': False, 'first_name': 'Илья', 'last_name': 'Логинов', 'username': 'KeldKemp',
+            'language_code': 'ru'
+        }, 'chat': {
+            'id': 453256909, 'first_name': 'Илья', 'last_name': 'Логинов', 'username': 'KeldKemp', 'type': 'private'
+        }, 'date': 1603435155, 'text': 'Корпуса'
+    }
+}
 
 
 def groups_msg(result):
@@ -32,7 +68,8 @@ def groups_msg(result):
             telegram.answer_callback(call_back_id)
             hseTelegram.timetables_date(last_chat_id=last_chat_id, last_text=last_text)
     else:
-        telegram.send_msg(last_chat_id, f'Возникли проблемы, обратитесь к @keldkemp\nErrorCode: 2\nID: {last_chat_id}')
+        telegram.send_msg(last_chat_id,
+                          f'Возникли проблемы, обратитесь к @keldkemp\nErrorCode: 2\nID: {last_chat_id}')
 
 
 def private_msg(result):
@@ -75,7 +112,8 @@ def razbor(last_chat_id, call_back_id, username, last_text, message_id):
         if last_text.find('Группа//') != -1:
             telegram.answer_callback(call_back_id)
             group = last_text.replace('Группа// ', '')
-            hseTelegram.update_group(last_chat_id=last_chat_id, group=group, username=username, message_id=message_id)
+            hseTelegram.update_group(last_chat_id=last_chat_id, group=group, username=username,
+                                     message_id=message_id)
         elif db.is_user(tg_id=int(last_chat_id)) is False or last_text == 'ChangeGroups//':
             telegram.answer_callback(call_back_id)
             hseTelegram.change_group(last_chat_id=last_chat_id, username=username)
@@ -98,51 +136,65 @@ def razbor(last_chat_id, call_back_id, username, last_text, message_id):
             hseTelegram.get_stat(last_chat_id=last_chat_id)
         elif last_text.lower().find('updatetimetable') != -1 and db.is_admin(last_chat_id) == 1:
             hseTelegram.update_timetable(last_chat_id=last_chat_id)
-        elif last_text.lower().find('list') != -1 and db.is_admin(last_chat_id) == 1:
-            hseTelegram.list_command_admin(last_chat_id)
         else:
             telegram.send_msg(last_chat_id, 'main', telegram.main_keyboard)
     else:
-        telegram.send_msg(last_chat_id, f'Возникли проблемы, обратитесь к @keldkemp\nErrorCode: 2\nID: {last_chat_id}')
+        telegram.send_msg(last_chat_id,
+                          f'Возникли проблемы, обратитесь к @keldkemp\nErrorCode: 2\nID: {last_chat_id}')
 
 
-if __name__ == '__main__':
-    threading.stack_size(128 * 1024)
-    db = DataBasePg()
-    log = Logging()
-    statics = Statics(db)
-    settings = SettingsTelegram().get_settings_tg()
-    telegram = TelegramApi(settings['token'])
-    hseTelegram = HseTelegram(db, telegram)
-    offset = None
-    call_back_id = None
-    admin_id = 453256909
+list1 = []
+i = 0
+while True:
+    list1.append(dict_res1)
+    list1.append(dict_res2)
+    list1.append(dict_res3)
+    if i == 100:
+        break
+    i += 1
 
-    while True:
+
+def get_list():
+    if len(list1) == 0:
+        return None
+    del list1[0]
+    return list1
+
+
+threading.stack_size(128 * 1024)
+db = DataBasePg()
+log = Logging()
+statics = Statics(db)
+settings = SettingsTelegram().get_settings_tg()
+telegram = TelegramApi(settings['token'])
+hseTelegram = HseTelegram(db, telegram)
+offset = None
+call_back_id = None
+admin_id = 453256909
+
+while True:
+    result = get_list()
+    if not result or result is None:
+        print('Тест завершен!')
+        break
+    last_update_id = result[0]['update_id']
+    offset = last_update_id + 1
+
+    # Статистика запросов
+    # threading.Thread(target=statics.insert_request).start()
+
+    try:
         try:
-            result = telegram.get_updates(offset=offset)
-            if not result:
+            if result[0]['message']['chat']['type'] == 'supergroup' or result[0]['message']['chat']['type'] == 'group':
+                threading.Thread(target=groups_msg, args=(result,)).start()
                 continue
-            last_update_id = result[0]['update_id']
-            offset = last_update_id + 1
         except:
-            continue
+            if result[0]['callback_query']['message']['chat']['type'] == 'supergroup' or \
+                    result[0]['callback_query']['message']['chat']['type'] == 'group':
+                threading.Thread(target=groups_msg, args=(result,)).start()
+                continue
 
-        # Статистика запросов
-        threading.Thread(target=statics.insert_request).start()
-
-        try:
-            try:
-                if result[0]['message']['chat']['type'] == 'supergroup' or result[0]['message']['chat']['type'] == 'group':
-                    threading.Thread(target=groups_msg, args=(result,)).start()
-                    continue
-            except:
-                if result[0]['callback_query']['message']['chat']['type'] == 'supergroup' or \
-                        result[0]['callback_query']['message']['chat']['type'] == 'group':
-                    threading.Thread(target=groups_msg, args=(result,)).start()
-                    continue
-
-            threading.Thread(target=private_msg, args=(result,)).start()
-        except Exception as e:
-            log.input_log(Utils.get_date_now_sec() + ' ' + str(e))
-            continue
+        threading.Thread(target=private_msg, args=(result,)).start()
+    except Exception as e:
+        log.input_log(Utils.get_date_now_sec() + ' ' + str(e))
+        continue

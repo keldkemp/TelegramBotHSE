@@ -1,7 +1,7 @@
-from DataBasePG import DataBasePg
+from DB.DataBasePG import DataBasePg
 from Settings import SettingsTelegram
 from Telegram import TelegramApi
-from get_files import HSE
+from HseUtils.HseFiles import HSE
 
 hse = HSE()
 db = DataBasePg()
