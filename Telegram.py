@@ -31,9 +31,13 @@ class TelegramApi:
         return json.loads(r.text)
 
     def get_updates(self, timeout=30, offset=None):
-        data = {'timeout': timeout, 'offset': offset}
-        r = self.session.post(self.BASE_URL + 'getUpdates', data=data)
-        return json.loads(r.text)['result']
+        try:
+            data = {'timeout': timeout, 'offset': offset}
+            r = self.session.post(self.BASE_URL + 'getUpdates', data=data)
+            return json.loads(r.text)['result']
+        except ConnectionError:
+            print('ConnectionError GetUpdates')
+            pass
 
     def answer_callback(self, id):
         data = {'callback_query_id': id}

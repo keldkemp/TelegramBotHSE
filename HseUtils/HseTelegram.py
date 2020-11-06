@@ -1,9 +1,9 @@
 import subprocess
 import sys
-from DataBasePG import DataBasePg
+from DB.DataBasePG import DataBasePg
 from Telegram import TelegramApi
-from Utils import Utils
-from Logging import Logging
+from Utils.Utils import Utils
+from Utils.Logging import Logging
 
 
 class HseTelegram:
@@ -24,10 +24,25 @@ class HseTelegram:
     __admin_id = 453256909
     __GROUP = 'group'
     __PRIVATE = 'private'
+    __ADMIN_COMMAND = {'list': 'Показать список Админских команд',
+                       'add': 'Добавить пользователя, либо группу. Маска (add username is_admin/id_tg is_admin group_id)',
+                       'sendallmsg': 'Отправить всем пользователям уведомление',
+                       'updatetimetable': 'Обновить расписание принудительно',
+                       'statics': 'Статистика за сегодня',
+                       }
 
     def set_scheduler(self, last_chat_id):
         # TODO: Кастомные уведомления
         pass
+
+    def list_command_admin(self, last_chat_id):
+        try:
+            msg = ''
+            for k, v in self.__ADMIN_COMMAND.items():
+                msg += f'<b>{k}</b> - {v}\n'
+            self.__telegram.send_msg(last_chat_id, msg)
+        except Exception as e:
+            self.__log.input_log(Utils.get_date_now_sec() + ' ' + str(e))
 
     def update_timetable(self, last_chat_id):
         try:
@@ -104,7 +119,7 @@ class HseTelegram:
                 i = 1
                 for par in timetable:
                     if i == 1:
-                        msg = f'Расписание на <b>{par.date_lesson}</b>\n\n'
+                        msg = f'Расписание на <b>{par.date_lesson} ({Utils.get_day_from_date(par.date_lesson)})</b>\n\n'
                     lesson = par.lesson.replace('\n', ' ')
                     msg += f'{i}) <b>{par.time}</b> - {lesson} - {par.teacher}\n'
                     i += 1

@@ -1,5 +1,5 @@
-from Logging import Logging
-from Utils import Utils
+from Utils.Logging import Logging
+from Utils.Utils import Utils
 
 
 class Statics:

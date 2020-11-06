@@ -1,8 +1,5 @@
-import threading
-
 import matplotlib.pyplot as plt
-
-from DataBasePG import DataBasePg
+from DB.DataBasePG import DataBasePg
 
 
 def lineplot(x_data, y_data, x_label="", y_label="", title=""):

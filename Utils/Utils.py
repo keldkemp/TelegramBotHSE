@@ -4,6 +4,15 @@ from win32com.client import Dispatch
 
 
 class Utils:
+    DAYS = {
+        0: 'Понедельнки',
+        1: 'Вторник',
+        2: 'Среда',
+        3: 'Четверг',
+        4: 'Пятница',
+        5: 'Суббота',
+        6: 'Воскресенье'
+    }
 
     @staticmethod
     def convert_xls_to_xlsx(file_name, new_file_name):
@@ -61,3 +70,10 @@ class Utils:
         if date_now > date:
             return False
         return True
+
+    @staticmethod
+    def get_day_from_date(date_str: str) -> str:
+        date_d = datetime.datetime.strptime(date_str, '%Y-%m-%d')
+        week_day = date_d.weekday()
+        week_day = Utils.DAYS.get(week_day)
+        return week_day
