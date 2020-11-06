@@ -105,6 +105,7 @@ def razbor(last_chat_id, call_back_id, username, last_text, message_id):
 
 
 if __name__ == '__main__':
+    threading.stack_size(128 * 1024)
     db = DataBasePg()
     log = Logging()
     statics = Statics(db)
@@ -116,11 +117,14 @@ if __name__ == '__main__':
     admin_id = 453256909
 
     while True:
-        result = telegram.get_updates(offset=offset)
-        if not result:
+        try:
+            result = telegram.get_updates(offset=offset)
+            if not result:
+                continue
+            last_update_id = result[0]['update_id']
+            offset = last_update_id + 1
+        except:
             continue
-        last_update_id = result[0]['update_id']
-        offset = last_update_id + 1
 
         # Статистика запросов
         threading.Thread(target=statics.insert_request).start()

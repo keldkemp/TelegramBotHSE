@@ -6,7 +6,9 @@ class Settings(ABC):
 
     def __read_file(self) -> json:
         f = open('settings.json')
-        return json.loads(f.read())
+        str = f.read()
+        f.close()
+        return json.loads(str)
 
     def __init__(self):
         json_settings = self.__read_file()
