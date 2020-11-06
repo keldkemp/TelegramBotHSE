@@ -145,7 +145,7 @@ class HseTelegram:
                 i = 1
                 for par in timetable:
                     if i == 1:
-                        msg = f'Расписание на <b>{par.date_lesson}</b>\n\n'
+                        msg = f'Расписание на <b>{par.date_lesson} ({Utils.get_day_from_date(par.date_lesson)})</b>\n\n'
                     lesson = par.lesson.replace('\n', ' ')
                     msg += f'{i}) <b>{par.time}</b> - {lesson} - {par.teacher}\n'
                     i += 1
