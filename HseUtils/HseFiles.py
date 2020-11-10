@@ -1,10 +1,14 @@
+"""
+Класс в основном нужен для работы с сайтом HSE.
+Сейчас здесь происходит основной движ по расписанию
+"""
 import requests
 import pandas as pd
 import os
 from bs4 import BeautifulSoup
 from datetime import datetime
 from openpyxl.utils import range_boundaries
-from Utils.Utils import Utils
+from Utils.utils import Utils
 from models.Models import Pars
 from openpyxl import load_workbook
 
@@ -14,7 +18,6 @@ class HSE:
     FILE_NAME = 'file_test.xls'
     NEW_FILE_NAME = 'file_test.xlsx'
     SHEET_NAME = '1 курс (СПО)'
-    # __API_KEY = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxIiwianRpIjoiZWJiZTE3YmIzNDM3OGFjZTA2Y2E4MTMwNmJlMDgzOTc3OGQ3ZjM5OTJhNDdjYjUzMmFhZTlmNDNmMWI0MTM5N2M5ZDkyYzI2ODU4ZTQyMTAiLCJpYXQiOjE2MDMzNjU5MDIsIm5iZiI6MTYwMzM2NTkwMiwiZXhwIjo0NzU5MDM5NTAyLCJzdWIiOiI0NjExODA1OSIsInNjb3BlcyI6WyJ0YXNrLnJlYWQiLCJ0YXNrLndyaXRlIiwid2ViaG9vay5yZWFkIiwid2ViaG9vay53cml0ZSJdfQ.qLEFJuWlrWTRjzd1WQDB34Gd_CLCbRNIbzq34AgCbjhTXL_1X4RtCmRpHS8vAo11W1Nqbvcvfq3UuzTkot_Udt2Gakyw5W2VNk4VMUbA1LjSNjgRHMDvVKK-OzLtENtooTXvXwEym_-J_JyIj5Zy-ojeEA3bV4etIcSXwlcqx7CxhwqxgPXF4vUOqzRYeXJmQp7TT5h4TjwJDgTNnZ75pnfEsRelf9_dNblF2wRBtDevCSDj6xQoVyLCMdeVUxY0Yfod4-T7br-Qhmiw3hPe36DoUKWoumyGN8s-03GKsBnOE3BjqtrcVOSkJSudSF-CMcrBBDo9Fj5TAMJW3gvw97rkRKZAzZitB26Gpl9bq7_xd1UnQyL3vLjnz0oY7XEm-MmED0Zr18qieVuPLLbjBi3QPkuqejAtKVDjccK2iO68GPUcXotzifpASz5g43pESPcjDmg9_KjwiVuY_YwFpPiwi86SBZMjVQxLLJEAN7YpuFzF0pT0lKakJUJqqHproaE5iFxIqJsntDzpLXf5YH8RNytqTsZ4sU70-T8HgS3x3b8hkNNR1zavonNIMy8JF69ySqj91gRBbYIj3mE3Y-gX_6PSeDIGPpuhn1d3UataQ2cQo-Ph2mr1v7rZEl7aTFnPUdR1lwWyvyNZXw0h_jvMO1sXpdSYpG-_hP8ZaVw'
     RU_MONTH_VALUES = {
         'января': '01',
         'февраля': '02',
@@ -29,44 +32,6 @@ class HSE:
         'ноября': 11,
         'декабря': 12,
     }
-
-    '''
-    def convert_xls_to_xlsx_site(self, file_name: str):
-        data_head = {'Authorization': 'Bearer '+ self.__API_KEY}
-        s = Session()
-        cloudconvert.configure(api_key=self.__API_KEY, sandbox=False)
-        job = cloudconvert.Job.create(payload={
-            'tasks': {
-                'upload-my-file': {
-                    'operation': 'import/upload'
-                }
-            }
-        })
-
-        upload_task_id = job['tasks'][0]['id']
-
-        upload_task = cloudconvert.Task.find(id=upload_task_id)
-        res = cloudconvert.Task.upload(file_name=file_name, task=upload_task)
-        res = cloudconvert.Task.find(id=upload_task_id)
-
-        data = {
-            "input": upload_task_id,
-            "input_format": "xls",
-            "output_format": "xlsx"
-        }
-        r = s.post('https://api.cloudconvert.com/v2/convert', headers=data_head, data=data)
-        json = r.json()
-        id = json['data']['id']
-
-        data = {'input': id}
-        r = s.post('https://api.cloudconvert.com/v2/export/url', headers=data_head, data=data)
-        json = r.json()
-        id = json['data']['id']
-
-        res = cloudconvert.Task.wait(id=id)  # Wait for job completion
-        file = res.get("result").get("files")[0]
-        res = cloudconvert.download(filename=file['filename'], url=file['url'])
-    '''
 
     def __merged_cells(self):
         wbook = load_workbook(filename=self.NEW_FILE_NAME)

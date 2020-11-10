@@ -1,5 +1,8 @@
-from Utils.Logging import Logging
-from Utils.Utils import Utils
+"""
+Класс для работы с статистикой.
+"""
+from Utils.logging import Logging
+from Utils.utils import Utils
 
 
 class Statics:

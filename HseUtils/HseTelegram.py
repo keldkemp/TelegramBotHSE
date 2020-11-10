@@ -1,9 +1,12 @@
+"""
+Класс для генерации сообщений
+"""
 import subprocess
 import sys
 from DB.DataBasePG import DataBasePg
 from Telegram import TelegramApi
-from Utils.Utils import Utils
-from Utils.Logging import Logging
+from Utils.utils import Utils
+from Utils.logging import Logging
 
 
 class HseTelegram:
