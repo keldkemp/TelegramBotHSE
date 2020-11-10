@@ -1,11 +1,15 @@
+"""
+Базовый файл для запуска всего проекта.
+TODO: Избавиться от дополнительных методов в этом файле
+"""
 import threading
 from DB.DataBasePG import DataBasePg
 from HseUtils.HseTelegram import HseTelegram
-from Utils.Logging import Logging
+from Utils.logging import Logging
 from Settings import SettingsTelegram
-from Utils.Statics import Statics
+from Utils.statics import Statics
 from Telegram import TelegramApi
-from Utils.Utils import Utils
+from Utils.utils import Utils
 
 
 def groups_msg(result):

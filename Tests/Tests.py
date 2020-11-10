@@ -1,11 +1,15 @@
+"""
+Что то подобие тестов.
+TODO: Надо переделать
+"""
 import threading
 from DB.DataBasePG import DataBasePg
 from HseUtils.HseTelegram import HseTelegram
 from Settings import SettingsTelegram
 from Telegram import TelegramApi
-from Utils.Logging import Logging
-from Utils.Statics import Statics
-from Utils.Utils import Utils
+from Utils.logging import Logging
+from Utils.statics import Statics
+from Utils.utils import Utils
 
 dict_res1 = {
     'update_id': 477824114,

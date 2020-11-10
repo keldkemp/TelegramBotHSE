@@ -1,3 +1,8 @@
+"""
+Представление данных.
+"""
+
+
 class Pars:
 
     def __init__(self, date, lesson, group, time, teacher):

@@ -1,3 +1,6 @@
+"""
+Вспомогательный класс - Часто встречаемые функции.
+"""
 import datetime
 import os
 from win32com.client import Dispatch

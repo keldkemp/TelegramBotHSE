@@ -229,3 +229,4 @@ fabric.properties
 /venv/
 /sqlitedb.db
 /settings.json
+/Tests/settings.json

@@ -1,9 +1,12 @@
+"""
+Класс для работы с БД
+"""
 import datetime
 import psycopg2
 from psycopg2 import Error
 from abc import ABC
 from Settings import SettingsDb
-from Utils.Utils import Utils
+from Utils.utils import Utils
 from models.Models import Pars
 
 

@@ -1,7 +1,10 @@
+"""
+Старая логика. НЕ ИСПОЛЬЗУЕТСЯ
+"""
 import sqlite3
 from sqlite3 import Error
 from abc import ABC
-from Utils.Utils import Utils
+from Utils.utils import Utils
 from models.Models import Pars
 
 
