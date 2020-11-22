@@ -1,0 +1,1 @@
+{"commands": "alter table USERS add column tg_code int", "file_name": "migrations_1","migration_link": ""}

@@ -4,6 +4,7 @@
 import subprocess
 import sys
 from DB.DataBasePG import DataBasePg
+from Emails.emails import Email
 from Telegram import TelegramApi
 from Utils.utils import Utils
 from Utils.logging import Logging
@@ -33,6 +34,41 @@ class HseTelegram:
                        'updatetimetable': 'Обновить расписание принудительно',
                        'statics': 'Статистика за сегодня',
                        }
+
+    def resend_email(self, last_chat_id):
+        code = Utils.generate_unic_code()
+        self.__db.update_code(tg_id=last_chat_id, code=code)
+        email = self.__db.get_email(tg_id=last_chat_id)
+        self.__email.send_email(to=email, subject='Авторизация в Телеграм Боте', text=f'Ваш код: {code}')
+        self.__telegram.send_msg(chat_id=last_chat_id, msg='На почту отправлен новый код!')
+
+    def input_code(self, last_chat_id, last_text):
+        if not last_text.isdigit():
+            self.__telegram.send_msg(chat_id=last_chat_id, msg='Пришлите, пожалуйста, код, который был отправлен вам на почту')
+            return
+        code = self.__db.get_code(tg_id=last_chat_id)
+        if code == int(last_text):
+            self.__db.activate_user(tg_id=last_chat_id)
+            msg = 'Вы успешно авторизовались в боте!'
+        else:
+            msg = 'Введен некорректный код!'
+        self.__telegram.send_msg(chat_id=last_chat_id, msg=msg)
+
+    def auth_in_tg(self, last_chat_id, last_text, username):
+        domen = last_text[last_text.find('@')+1:]
+        if domen.find('hse.ru') == -1:
+            self.__telegram.send_msg(chat_id=last_chat_id, msg='Введите ваш личный адерс электронной почты в домене hse.ru!')
+            return
+        number = Utils.generate_unic_code()
+
+        self.__db.insert_users_new(tg_id=last_chat_id, code=number, username=username, email=last_text)
+        self.__email.send_email(to=last_text, subject='Авторизация в Телеграм Боте', text=f'Ваш код: {number}')
+        key = '{"inline_keyboard": [[{"text": ":(", "callback_data": "NotSendEmail//"}]]}'
+        self.__telegram.send_msg(chat_id=last_chat_id, msg='Проверьте вашу почту. Отправлен код!\n\n'
+                                                           'Если код не пришел в течении 2 минут, нажмите кнопку ниже',
+                                 reply_markup=key)
+        # TODO: Авторизация через доменную почту HSE
+        pass
 
     def set_scheduler(self, last_chat_id):
         # TODO: Кастомные уведомления
@@ -162,18 +198,46 @@ class HseTelegram:
                                      self.__ERROR_MSG_TIMETABLES)
             self.__log.input_log(Utils.get_date_now_sec() + ' ' + str(e))
 
-    def change_group(self, last_chat_id, username):
+    def change_group_main(self, last_chat_id, username):
         try:
+            ar_txt = '['
+            for i in range(1, 5):
+                groups_in_bd = self.__db.get_groups_in_course(Utils.get_year_from_date(Utils.get_date_from_course(str(i))) % 100)
+                if len(groups_in_bd) == 0:
+                    break
+                if i == 1:
+                    ar_txt = ar_txt + '[{"text": %d, "callback_data": "ChangeGroup_Курс// %s"}' % (i, i)
+                else:
+                    ar_txt = ar_txt + ',{"text": %d, "callback_data": "ChangeGroup_Курс// %s"}' % (i, i)
+            ar_txt = ar_txt + ']]'
+            key = '{"inline_keyboard":' + ar_txt + '}'
+            self.__telegram.send_msg(last_chat_id, username + ', выберите свой курс', key)
+        except Exception as e:
+            self.__telegram.send_msg(last_chat_id, self.__MSG_ERROR + self.__ERROR_COD_CHANGE_GROUP +
+                                     self.__ERROR_MSG_CHANGE_GROUP)
+            self.__log.input_log(Utils.get_date_now_sec() + ' ' + str(e))
+
+    def change_group(self, last_chat_id, username, last_text, message_id):
+        try:
+            self.__telegram.delete_msg(last_chat_id, message_id)
+            course = last_text.split()[1]
+            year_course = Utils.get_year_from_date(Utils.get_date_from_course(course)) % 100
             groups = ''
             ar_txt = '['
             i = 1
-            for group in self.__db.get_all_groups():
+            count = 1
+            groups_in_bd = self.__db.get_groups_in_course(year_course)
+            for group in groups_in_bd:
                 groups = groups + str(i) + ') ' + group[0] + '\n'
-                if i == 1:
+                if count == 1:
                     ar_txt = ar_txt + '[{"text": %d, "callback_data": "Группа// %s"}' % (i, group[0])
                 else:
                     ar_txt = ar_txt + ',{"text": %d, "callback_data": "Группа// %s"}' % (i, group[0])
                 i += 1
+                count += 1
+                if 8 < count <= len(groups_in_bd):
+                    ar_txt += '], '
+                    count = 1
             ar_txt = ar_txt + ']]'
             key = '{"inline_keyboard":' + ar_txt + '}'
 
@@ -231,6 +295,7 @@ class HseTelegram:
                                      self.__ERROR_MSG_SETTINGS)
             self.__log.input_log(Utils.get_date_now_sec() + ' ' + str(e))
 
-    def __init__(self, db: DataBasePg, telegram: TelegramApi):
+    def __init__(self, db: DataBasePg, telegram: TelegramApi, email: Email):
         self.__db = db
         self.__telegram = telegram
+        self.__email = email

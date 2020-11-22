@@ -25,17 +25,22 @@ try:
 
     # достаем даты занятий
     date = []
-    for pars in data_pars:
-        for par in pars:
-            date.append(par.date_lesson)
+    groups = []
+    for group_pars in data_pars:
+        for pars in group_pars:
+            for par in pars:
+                groups.append(par.group)
+                date.append(par.date_lesson)
     # удаляем из БД данные по текущим датам
     date = list(set(date))
-    db.delete_timetables_date(date)
+    groups = list(set(groups))
+    db.delete_timetables_date(date, groups)
 
     # Заполняем новыми данными
-    for pars in data_pars:
-        for par in pars:
-            db.insert_timetables(par)
+    for group_pars in data_pars:
+        for pars in group_pars:
+            for par in pars:
+                db.insert_timetables(par)
     # tg.send_msg(admin_id, 'TimeTables is update success')
 except Exception as error:
     tg.send_msg(admin_id, 'ERROR:\n' + str({error}))

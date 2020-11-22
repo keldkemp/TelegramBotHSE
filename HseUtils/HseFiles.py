@@ -33,9 +33,9 @@ class HSE:
         'декабря': 12,
     }
 
-    def __merged_cells(self):
+    def __merged_cells(self, sheet_name):
         wbook = load_workbook(filename=self.NEW_FILE_NAME)
-        sheet = wbook[self.SHEET_NAME]
+        sheet = wbook[sheet_name]
         merge = [mcr.coord for mcr in sheet.merged_cells.ranges]
         for cell_group in merge:
             min_col, min_row, max_col, max_row = range_boundaries(str(cell_group))
@@ -75,45 +75,31 @@ class HSE:
 
         return times
 
-    def __get_pars(self, days: list, times: list, group1: list, group2: list) -> list:
+    def __get_pars(self, days: list, times: list, group1: list) -> list:
         pars = []
         flag = False
-        for day, time, s1, s2 in zip(days, times, group1, group2):
+        i = 0
+        for day, time, s1 in zip(days, times, group1):
+            i += 1
             if flag:
-                # classroom1 = s1[str(s1).find("(")+1:len(str(s1))-1]
-                if str(s2) == 'nan':
+                if str(s1) != 'nan':
                     pars.append(par1 + ";" + str(time) + ";" + str(s1))
-                elif str(s1) == 'nan':
-                    pars.append(par2 + ";" + str(time) + ";" + str(s2))
                 else:
-                    # classroom2 = s2[str(s2).find("(") + 1:len(str(s2)) - 1]
                     pars.append(par1 + ";" + str(time) + ";" + str(s1))
-                    pars.append(par2 + ";" + str(time) + ";" + str(s2))
                 flag = False
                 continue
-            if str(s1).find('подразделения') != -1 or str(s2).find('подразделения') != -1:
+            if str(s1).find('подразделения') != -1:
                 continue
-            if str(s1).find('учебного года') != -1 and str(s2).find('учебного года') != -1:
+            if str(s1).find('учебного года') != -1:
                 continue
-            if str(s1).find('ПИ-20СВ') != -1 and str(s2).find('ПИ-20СВ') != -1:
-                group_name1, group_name2 = s1, s2
+            if i == 2:
+                group_name1 = s1
                 continue
-            if str(s1).find('nan') != -1 and str(s2).find('nan') != -1:
+            if str(s1).find('nan') != -1:
                 continue
-            if str(s1).find('nan') == -1 and str(s2).find('nan') != -1:
+            if str(s1).find('nan') == -1:
                 day = day[day.find('\n') + 1:]
                 par1 = str(day) + ";" + str(s1) + ";" + group_name1
-                flag = True
-                continue
-            if str(s1).find('nan') != -1 and str(s2).find('nan') == -1:
-                day = day[day.find('\n') + 1:]
-                par2 = str(day) + ";" + str(s2) + ";" + group_name2
-                flag = True
-                continue
-            if str(s1).find('nan') == -1 and str(s2).find('nan') == -1:
-                day = day[day.find('\n') + 1:]
-                par1 = str(day) + ";" + str(s1) + ";" + group_name1
-                par2 = str(day) + ";" + str(s2) + ";" + group_name2
                 flag = True
                 continue
 
@@ -137,21 +123,32 @@ class HSE:
     def __parse_xls(self, file_name: str) -> list:
         # self.convert_xls_to_xlsx_site(file_name)
         Utils.convert_xls_to_xlsx(file_name, self.NEW_FILE_NAME)
-        self.__merged_cells()
 
-        data_xls = pd.read_excel(file_name, self.SHEET_NAME, index_col=None)
-        data_xlsx = pd.read_excel(self.NEW_FILE_NAME, self.SHEET_NAME, index_col=None)
-        # ar_js = json.loads(data_xlsx.to_json())
+        data_xlsx_sheets = pd.ExcelFile(self.NEW_FILE_NAME)
+        sheets = data_xlsx_sheets.sheet_names
+        pars_data = []
 
-        t1 = data_xls['Unnamed: 0'].tolist()
-        t2 = data_xls['РАСПИСАНИЕ УЧЕБНЫХ ЗАНЯТИЙ И ПРОМЕЖУТОЧНОЙ АТТЕСТАЦИИ\nочно-заочного отделения'].tolist()
-        group1 = data_xlsx['РАСПИСАНИЕ УЧЕБНЫХ ЗАНЯТИЙ И ПРОМЕЖУТОЧНОЙ АТТЕСТАЦИИ\nочно-заочного отделения.3'].tolist()
-        group2 = data_xlsx['РАСПИСАНИЕ УЧЕБНЫХ ЗАНЯТИЙ И ПРОМЕЖУТОЧНОЙ АТТЕСТАЦИИ\nочно-заочного отделения.4'].tolist()
+        for sheet in sheets:
+            self.__merged_cells(sheet_name=sheet)
+            data_xlsx = pd.read_excel(self.NEW_FILE_NAME, sheet, index_col=None)
+            data_xls = pd.read_excel(file_name, sheet, index_col=None)
 
-        days = self.__get_days(t1)
-        times = self.__get_times(t2)
-        pars = self.__get_pars(days=days, times=times, group1=group1, group2=group2)
-        pars_data = self.__get_pars_data(pars)
+            # 0 - всегда дни, 1 - всегда время. Остальные в списке - это группы
+            head_column = list(data_xlsx.columns)
+            # ar_js = json.loads(data_xlsx.to_json())
+
+            t1 = data_xls[head_column[0]].tolist()
+            t2 = data_xls[head_column[1]].tolist()
+            head_column.pop(0)
+            head_column.pop(0)
+
+            for col_name in head_column:
+                group = data_xlsx[col_name].tolist()
+
+                days = self.__get_days(t1)
+                times = self.__get_times(t2)
+                pars = self.__get_pars(days=days, times=times, group1=group)
+                pars_data.append(self.__get_pars_data(pars))
 
         return pars_data
 
@@ -173,12 +170,28 @@ class HSE:
         table = table.find_all('p', class_='text')
 
         flag = False
+        flag_2 = False
         urls = []
         for resp in table:
             if resp.text.find('Заочная форма обучения') != -1:
                 break
+            if resp.text.find('Бакалавриат') != -1:
+                #flag_2 = True
+                pass
+                #TODO: Очники
             if resp.text.find('Очно-заочная форма обучения') != -1:
                 flag = True
+            if flag_2:
+                try:
+                    for cont in resp.contents:
+                        if str(cont).find('link') != -1 and cont.text.find('изм') != -1:
+                            url = cont.attrs['href']
+                            url = url[url.find('data') - 1:]
+                            urls.append(self.BASE_URL + url)
+                            flag_2 = False
+                            break
+                except:
+                    pass
             if flag:
                 try:
                     for cont in resp.contents:

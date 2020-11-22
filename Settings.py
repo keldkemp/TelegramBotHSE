@@ -22,6 +22,18 @@ class Settings(ABC):
         self._db_user = json_settings['db_user']
         self._db_password = json_settings['db_password']
         self._host = json_settings['host']
+        self._login_email = json_settings['login_email']
+        self._password_email = json_settings['password_email']
+        self._host_email = json_settings['host_email']
+        self._port_email = json_settings['port_email']
+
+
+# класс для получения настроек для Почты. Наследуется от базового класса
+class SettingsEmail(Settings):
+    def get_settings_email(self) -> dict:
+        list = {'login': self._login_email, 'password': self._password_email, 'host': self._host_email,
+                'port': self._port_email}
+        return list
 
 
 # класс для получения настроек для ТГ. Наследуется от базового класса

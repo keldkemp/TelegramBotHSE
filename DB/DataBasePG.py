@@ -2,6 +2,7 @@
 Класс для работы с БД
 """
 import datetime
+import json
 import psycopg2
 from psycopg2 import Error
 from abc import ABC
@@ -64,11 +65,18 @@ class DataBasePg(DataBaseStandart):
         self.CONN.commit()
         c.close()
 
-    def delete_timetables_date(self, date):
+    def delete_timetables_date(self, dates, groups):
         self.conn_open_close(1)
         c = self.CONN.cursor()
-        for date in date:
-            c.execute('DELETE FROM TIMETABLES where date_lesson = %s', (date,))
+        for group in groups:
+            c.execute('SELECT id FROM GROUPS WHERE name = %s', (group,))
+            group_id = c.fetchone()
+            if group_id is None:
+                continue
+            else:
+                group_id = group_id[0]
+            for date in dates:
+                c.execute('DELETE FROM TIMETABLES where date_lesson = %s and id_group = %s', (date, group_id))
         self.CONN.commit()
         c.close()
 
@@ -104,7 +112,13 @@ class DataBasePg(DataBaseStandart):
             id_time = id_time[0]
 
         c.execute('SELECT id FROM GROUPS where name = %s', (par.group,))
-        id_group = c.fetchone()[0]
+        id_group = c.fetchone()
+        if id_group is None:
+            c.execute('INSERT INTO GROUPS (name) VALUES (%s)', (par.group,))
+            c.execute('SELECT id FROM GROUPS where name = %s', (par.group,))
+            id_group = c.fetchone()[0]
+        else:
+            id_group = id_group[0]
         self.CONN.commit()
 
         c.execute('INSERT INTO TIMETABLES (id_lesson, id_teacher, id_time, id_classroom, id_group, date_lesson)' +
@@ -119,6 +133,14 @@ class DataBasePg(DataBaseStandart):
             'SELECT s.tg_id, s.tg_username, s.is_admin, g.name FROM USERS s, GROUPS g WHERE s.id_group=g.id and s.tg_id = %s',
             (tg_id,))
         result = c.fetchone()
+        c.close()
+        return result
+
+    def get_groups_in_course(self, course):
+        self.conn_open_close(1)
+        c = self.CONN.cursor()
+        c.execute('SELECT name FROM GROUPS where name like %s', ('%-' + str(course) + '%',))
+        result = c.fetchall()
         c.close()
         return result
 
@@ -143,6 +165,15 @@ class DataBasePg(DataBaseStandart):
             c.execute('UPDATE USERS set id_group = %s, tg_username = %s where tg_id = %s', (id_group, username, tg_id))
         else:
             c.execute('UPDATE USERS set id_group = %s where tg_id = %s', (id_group, tg_id))
+        self.CONN.commit()
+        c.close()
+
+    def insert_users_new(self, tg_id, code, username, email, is_admin=0):
+        self.conn_open_close(1)
+        c = self.CONN.cursor()
+        if username == '':
+            username = 'User ' + str(datetime.datetime.now())
+        c.execute('INSERT INTO USERS (tg_id, tg_username, is_admin, tg_code, email) VALUES (%s, %s, %s, %s, %s)', (tg_id, username, is_admin, code, email))
         self.CONN.commit()
         c.close()
 
@@ -257,6 +288,62 @@ class DataBasePg(DataBaseStandart):
         c.close()
         return result
 
+    def is_group(self, tg_id):
+        self.conn_open_close(1)
+        c = self.CONN.cursor()
+        c.execute('SELECT id_group FROM USERS WHERE TG_ID = %s', (tg_id,))
+        res = c.fetchone()
+        c.close()
+        if res is None or res[0] is None:
+            return False
+        else:
+            return True
+
+    def activate_user(self, tg_id):
+        self.conn_open_close(1)
+        c = self.CONN.cursor()
+        c.execute('UPDATE USERS SET is_activate = 1 WHERE TG_ID = %s', (tg_id,))
+        self.CONN.commit()
+        c.close()
+
+    def update_code(self, tg_id, code):
+        self.conn_open_close(1)
+        c = self.CONN.cursor()
+        c.execute('UPDATE USERS SET tg_code = %s WHERE TG_ID = %s', (code, tg_id))
+        self.CONN.commit()
+        c.close()
+
+    def get_email(self, tg_id):
+        self.conn_open_close(1)
+        c = self.CONN.cursor()
+        c.execute('SELECT email FROM USERS WHERE TG_ID = %s', (tg_id,))
+        res = c.fetchone()[0]
+        c.close()
+        return res
+
+    def get_code(self, tg_id):
+        self.conn_open_close(1)
+        c = self.CONN.cursor()
+        result = None
+        c.execute('SELECT tg_code FROM USERS WHERE TG_ID = %s', (tg_id,))
+        result = c.fetchone()[0]
+        c.close()
+        return result
+
+    def is_activate(self, tg_id):
+        self.conn_open_close(1)
+        c = self.CONN.cursor()
+        result = None
+        c.execute('SELECT is_activate FROM USERS WHERE TG_ID = %s', (tg_id,))
+        result = c.fetchone()
+        c.close()
+        if result is None:
+            return False
+        if result[0] == 1:
+            return True
+        else:
+            return False
+
     def is_user(self, tg_id=None, username=None):
         self.conn_open_close(1)
         c = self.CONN.cursor()
@@ -287,6 +374,43 @@ class DataBasePg(DataBaseStandart):
         result = c.fetchall()
         c.close()
         return result
+
+    def read_migrations(self):
+        self.conn_open_close(1)
+        c = self.CONN.cursor()
+        try:
+            c.execute('SELECT * FROM MIGRATIONS')
+            migrations_in_db = c.fetchall()
+            migrations_list = Utils.read_migrations()
+            for migrations in migrations_list:
+                js = json.loads(migrations)
+                c.execute('SELECT * FROM MIGRATIONS WHERE name = %s', (js['file_name'],))
+                res = c.fetchone()
+                if res is None:
+                    c.execute('INSERT INTO MIGRATIONS (name, is_setup) VALUES (%s, 0)', (js['file_name'],))
+                    self.CONN.commit()
+                    if js['commands'] != '':
+                        c.execute(js['commands'])
+                        c.execute('UPDATE MIGRATIONS SET is_setup = 1 WHERE name = %s', (js['file_name'],))
+                        self.CONN.commit()
+                    else:
+                        raise Exception
+                elif res[2] == 1:
+                    continue
+                else:
+                    if js['commands'] != '':
+                        c.execute(js['commands'])
+                        c.execute('UPDATE MIGRATIONS SET is_setup = 1 WHERE name = %s', (js['file_name'],))
+                        self.CONN.commit()
+                    else:
+                        raise Exception
+                y = 1
+        except Error as e:
+            print('ERROR MIGRATIONS!\nМиграции не применины. Проверьте правильность\n' + str(e))
+        except Exception as e:
+            print('ERROR MIGRATIONS!\nМиграции не применины. Проверьте правильность\n' + str(e))
+
+        c.close()
 
     def insert_init(self):
         self.conn_open_close(1)
@@ -326,6 +450,7 @@ class DataBasePg(DataBaseStandart):
         self.conn_open_close(1)
         try:
             c = self.CONN.cursor()
+            c.execute(f'{self.CREATE_TABLE} MIGRATIONS (id SERIAL {self.PK}, name {self.TEXT}, is_setup {self.INT})')
             c.execute(f'{self.CREATE_TABLE} STATICS (id SERIAL {self.PK}, st_requests {self.INT}, st_date {self.TEXT})')
             c.execute(f'{self.CREATE_TABLE} CORPS (id SERIAL {self.PK}, body {self.TEXT})')
             c.execute(f'{self.CREATE_TABLE} TIMES (id SERIAL {self.PK}, time {self.TEXT})')
@@ -357,6 +482,7 @@ class DataBasePg(DataBaseStandart):
     def __init__(self):
         self.create_tables()
         self.insert_init()
+        self.read_migrations()
 
     def __del__(self):
         self.conn_open_close(0)

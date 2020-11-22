@@ -4,9 +4,10 @@ TODO: Избавиться от дополнительных методов в �
 """
 import threading
 from DB.DataBasePG import DataBasePg
+from Emails.emails import Email
 from HseUtils.HseTelegram import HseTelegram
 from Utils.logging import Logging
-from Settings import SettingsTelegram
+from Settings import SettingsTelegram, SettingsEmail
 from Utils.statics import Statics
 from Telegram import TelegramApi
 from Utils.utils import Utils
@@ -75,14 +76,17 @@ def private_msg(result):
 
 
 def razbor(last_chat_id, call_back_id, username, last_text, message_id):
-    if db.is_user(tg_id=int(last_chat_id)) or db.is_user(username=username):
+    if db.is_user(tg_id=int(last_chat_id)) and db.is_activate(tg_id=last_chat_id):
         if last_text.find('Группа//') != -1:
             telegram.answer_callback(call_back_id)
             group = last_text.replace('Группа// ', '')
             hseTelegram.update_group(last_chat_id=last_chat_id, group=group, username=username, message_id=message_id)
-        elif db.is_user(tg_id=int(last_chat_id)) is False or last_text == 'ChangeGroups//':
+        elif last_text.find('ChangeGroup_Курс//') != -1:
             telegram.answer_callback(call_back_id)
-            hseTelegram.change_group(last_chat_id=last_chat_id, username=username)
+            hseTelegram.change_group(last_chat_id=last_chat_id, username=username, last_text=last_text, message_id=message_id)
+        elif not db.is_group(tg_id=last_chat_id) or last_text == 'ChangeGroups//':
+            telegram.answer_callback(call_back_id)
+            hseTelegram.change_group_main(last_chat_id=last_chat_id, username=username)
         elif last_text == 'Расписание' or last_text.find('/timetables') != -1:
             hseTelegram.timetables_now(last_chat_id=last_chat_id, message_id=message_id)
         elif last_text.find('par_dates_list') != -1:
@@ -106,18 +110,27 @@ def razbor(last_chat_id, call_back_id, username, last_text, message_id):
             hseTelegram.list_command_admin(last_chat_id)
         else:
             telegram.send_msg(last_chat_id, 'main', telegram.main_keyboard)
+    elif last_text == 'NotSendEmail//':
+        telegram.answer_callback(call_back_id)
+        hseTelegram.resend_email(last_chat_id=last_chat_id)
+    elif db.is_user(tg_id=int(last_chat_id)):
+        hseTelegram.input_code(last_chat_id=last_chat_id, last_text=last_text)
+    elif last_text.find('@') != -1:
+        hseTelegram.auth_in_tg(last_chat_id=last_chat_id, last_text=last_text, username=username)
     else:
-        telegram.send_msg(last_chat_id, f'Возникли проблемы, обратитесь к @keldkemp\nErrorCode: 2\nID: {last_chat_id}')
+        telegram.send_msg(last_chat_id, f'Чтобы авторизоваться в боте, необходимо указать Email в домене HSE')
 
 
 if __name__ == '__main__':
     threading.stack_size(128 * 1024)
     db = DataBasePg()
+    settings = SettingsEmail().get_settings_email()
+    email = Email(login=settings['login'], password=settings['password'], host=settings['host'], port=settings['port'])
     log = Logging()
     statics = Statics(db)
     settings = SettingsTelegram().get_settings_tg()
     telegram = TelegramApi(settings['token'])
-    hseTelegram = HseTelegram(db, telegram)
+    hseTelegram = HseTelegram(db, telegram, email)
     offset = None
     call_back_id = None
     admin_id = 453256909

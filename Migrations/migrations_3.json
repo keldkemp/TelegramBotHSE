@@ -1,0 +1,1 @@
+{"commands": "ALTER TABLE USERS ADD COLUMN email text","file_name": "migrations_3","migration_link": "migrations_2"}
