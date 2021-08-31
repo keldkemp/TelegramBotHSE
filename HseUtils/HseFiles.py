@@ -32,6 +32,17 @@ class HSE:
         'ноября': 11,
         'декабря': 12,
     }
+    SHEETS = {
+        'A': 1,
+        'B': 2,
+        'C': 3,
+        'D': 4,
+        'E': 5,
+        'F': 6,
+        'G': 7,
+        'H': 8,
+        'I': 9,
+    }
 
     def __merged_cells(self, sheet_name):
         wbook = load_workbook(filename=self.NEW_FILE_NAME)
@@ -40,6 +51,11 @@ class HSE:
         for cell_group in merge:
             min_col, min_row, max_col, max_row = range_boundaries(str(cell_group))
             top_left_cell_value = sheet.cell(row=min_row, column=min_col).value
+            if top_left_cell_value is not None and top_left_cell_value[0] == '=':
+                min_row = top_left_cell_value[2:len(top_left_cell_value)]
+                min_row = int(''.join(min_row))
+                min_col = self.SHEETS.get(top_left_cell_value[1])
+                top_left_cell_value = sheet.cell(row=min_row, column=min_col).value
             sheet.unmerge_cells(str(cell_group))
             for row in sheet.iter_rows(min_col=min_col, min_row=min_row, max_col=max_col, max_row=max_row):
                 for cell in row:
@@ -51,6 +67,8 @@ class HSE:
         days = []
         i = 0
         for d in t1:
+            if isinstance(d, datetime):
+                continue
             if i < 2:
                 i += 1
                 days.append(d)
@@ -82,8 +100,9 @@ class HSE:
         for day, time, s1 in zip(days, times, group1):
             i += 1
             if flag:
-                if str(s1) != 'nan':
-                    pars.append(par1 + ";" + str(time) + ";" + str(s1))
+                day = day[day.find('\n') + 1:] + ';'
+                if s1 == par1.replace(day, '').replace(';' + group_name1, ''):
+                    pars.append(par1 + ";" + str(time) + ";None")
                 else:
                     pars.append(par1 + ";" + str(time) + ";" + str(s1))
                 flag = False
@@ -96,6 +115,10 @@ class HSE:
                 group_name1 = s1
                 continue
             if str(s1).find('nan') != -1:
+                if isinstance(day, int):
+                    continue
+                if str(pars).find(str(day[day.find('\n') + 1:])) == -1:
+                    pars.append(day[day.find('\n') + 1:] + ';None;None;None;None')
                 continue
             if str(s1).find('nan') == -1:
                 day = day[day.find('\n') + 1:]
@@ -112,10 +135,13 @@ class HSE:
             par = par.split(';')
             date = par[0].split()
             month = self.RU_MONTH_VALUES[date[1]]
+            year = date_now.year
+            if month == '01' and date_now.month == 12:
+                year += 1
             if len(str(date[0])) != 1:
-                str_date = str(date_now.year) + '-' + str(month) + '-' + str(date[0])
+                str_date = str(year) + '-' + str(month) + '-' + str(date[0])
             else:
-                str_date = str(date_now.year) + '-' + str(month) + '-' + '0' + str(date[0])
+                str_date = str(year) + '-' + str(month) + '-' + '0' + str(date[0])
             pars_data.append(Pars(str_date, par[1], par[2], par[3], par[4]))
 
         return pars_data
@@ -141,9 +167,14 @@ class HSE:
             t2 = data_xls[head_column[1]].tolist()
             head_column.pop(0)
             head_column.pop(0)
+            groups = []
 
             for col_name in head_column:
                 group = data_xlsx[col_name].tolist()
+
+                if group[1] in groups:
+                    continue
+                groups.append(group[1])
 
                 days = self.__get_days(t1)
                 times = self.__get_times(t2)

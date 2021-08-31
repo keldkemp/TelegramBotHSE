@@ -81,6 +81,8 @@ class DataBasePg(DataBaseStandart):
         c.close()
 
     def insert_timetables(self, par):
+        if par.group == 'None' and par.lesson == 'None' and par.teacher == 'None' and par.time == 'None':
+            return -1
         self.conn_open_close(1)
         c = self.CONN.cursor()
 
@@ -261,7 +263,7 @@ class DataBasePg(DataBaseStandart):
 
         data_pars = []
         for par in result:
-            data_pars.append(Pars(par[0], par[1], par[4], par[3], par[2]))
+            data_pars.append(Pars(par[0], par[1], par[4], par[3], None if par[2] == 'None' else par[2]))
         return data_pars
 
     def get_timetables(self, date, group):
@@ -416,12 +418,13 @@ class DataBasePg(DataBaseStandart):
         self.conn_open_close(1)
         c = self.CONN.cursor()
         try:
-            """"
-            c.execute("INSERT INTO CORPS (body) VALUES ('1 корпус - ул. Студенческая, 38')")
-            c.execute("INSERT INTO CORPS (body) VALUES ('2 корпус - бульвар Гагарина, 37')")
-            c.execute("INSERT INTO CORPS (body) VALUES ('3 корпус - бульвар Гагарина, 37а')")
-            c.execute("INSERT INTO CORPS (body) VALUES ('4 корпус - ул. Лебедева, 27')")
-            c.execute("INSERT INTO CORPS (body) VALUES ('5 корпус - ул. Студенческая, 23')")
+            c.execute("INSERT INTO CORPS (id, body) VALUES (1, '1 корпус - ул. Студенческая, 38')")
+            c.execute("INSERT INTO CORPS (id, body) VALUES (2, '2 корпус - бульвар Гагарина, 37')")
+            c.execute("INSERT INTO CORPS (id, body) VALUES (3, '3 корпус - бульвар Гагарина, 37а')")
+            c.execute("INSERT INTO CORPS (id, body) VALUES (4, '4 корпус - ул. Лебедева, 27')")
+            c.execute("INSERT INTO CORPS (id, body) VALUES (5, '5 корпус - ул. Студенческая, 23')")
+            self.CONN.commit()
+            """
             c.execute("INSERT INTO TIMES (time) VALUES ('09:10-10:30')")
             c.execute("INSERT INTO TIMES (time) VALUES ('10:40-12:00')")
             c.execute("INSERT INTO TIMES (time) VALUES ('12:40-14:00')")

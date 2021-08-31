@@ -160,7 +160,10 @@ class HseTelegram:
                     if i == 1:
                         msg = f'Расписание на <b>{par.date_lesson} ({Utils.get_day_from_date(par.date_lesson)})</b>\n\n'
                     lesson = par.lesson.replace('\n', ' ')
-                    msg += f'{i}) <b>{par.time}</b> - {lesson} - {par.teacher}\n'
+                    if par.teacher is not None:
+                        msg += f'{i}) <b>{par.time}</b> - {lesson} - {par.teacher}\n'
+                    else:
+                        msg += f'{i}) <b>{par.time}</b> - {lesson}\n'
                     i += 1
             key = '{"inline_keyboard": [[{"text": "⬅", "callback_data": "par_dates_list 0 %i %s"}, {"text": "➡", ' \
                   '"callback_data": "par_dates_list 1 %i %s"}]]}' % (
@@ -186,7 +189,10 @@ class HseTelegram:
                     if i == 1:
                         msg = f'Расписание на <b>{par.date_lesson} ({Utils.get_day_from_date(par.date_lesson)})</b>\n\n'
                     lesson = par.lesson.replace('\n', ' ')
-                    msg += f'{i}) <b>{par.time}</b> - {lesson} - {par.teacher}\n'
+                    if par.teacher is not None:
+                        msg += f'{i}) <b>{par.time}</b> - {lesson} - {par.teacher}\n'
+                    else:
+                        msg += f'{i}) <b>{par.time}</b> - {lesson}\n'
                     i += 1
 
             key = '{"inline_keyboard": [[{"text": "⬅", "callback_data": "par_dates_list 0 %i %s"}, {"text": "➡", ' \
@@ -204,8 +210,8 @@ class HseTelegram:
             for i in range(1, 5):
                 groups_in_bd = self.__db.get_groups_in_course(Utils.get_year_from_date(Utils.get_date_from_course(str(i))) % 100)
                 if len(groups_in_bd) == 0:
-                    break
-                if i == 1:
+                    continue
+                if len(ar_txt) == 1:
                     ar_txt = ar_txt + '[{"text": %d, "callback_data": "ChangeGroup_Курс// %s"}' % (i, i)
                 else:
                     ar_txt = ar_txt + ',{"text": %d, "callback_data": "ChangeGroup_Курс// %s"}' % (i, i)
