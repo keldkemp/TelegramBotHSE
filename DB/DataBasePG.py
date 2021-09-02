@@ -199,6 +199,13 @@ class DataBasePg(DataBaseStandart):
         self.CONN.commit()
         c.close()
 
+    def insert_users_activate(self, username,  tg_id, is_admin=0):
+        self.conn_open_close(1)
+        c = self.CONN.cursor()
+        c.execute('INSERT INTO USERS (tg_username, tg_id, is_admin, is_activate) VALUES (%s, %s, %s, 1)', (username, tg_id, is_admin))
+        self.CONN.commit()
+        c.close()
+
     def get_next_date(self, flag, date, tg_id):
         self.conn_open_close(1)
         c = self.CONN.cursor()

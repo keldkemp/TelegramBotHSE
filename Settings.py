@@ -3,7 +3,9 @@
 Настройки берутся из файла
 """
 import json
+import os
 from abc import ABC
+from Utils.utils import Utils
 
 
 # Абстрактный класс по работе с настройками
@@ -22,10 +24,13 @@ class Settings(ABC):
         self._db_user = json_settings['db_user']
         self._db_password = json_settings['db_password']
         self._host = json_settings['host']
-        self._login_email = json_settings['login_email']
-        self._password_email = json_settings['password_email']
-        self._host_email = json_settings['host_email']
-        self._port_email = json_settings['port_email']
+        if os.environ.get('is_email') is not None:
+            is_email = Utils.get_bool(os.environ['is_email'])
+            if is_email:
+                self._login_email = json_settings['login_email']
+                self._password_email = json_settings['password_email']
+                self._host_email = json_settings['host_email']
+                self._port_email = json_settings['port_email']
 
 
 # класс для получения настроек для Почты. Наследуется от базового класса

@@ -20,6 +20,13 @@ class Utils:
     }
 
     @staticmethod
+    def get_bool(bool_str: str) -> bool:
+        if bool_str.upper() == 'TRUE':
+            return True
+        else:
+            return False
+
+    @staticmethod
     def convert_xls_to_xlsx(file_name, new_file_name):
         xlApp = Dispatch('Excel.Application')
         xlApp.Visible = 0

@@ -284,6 +284,13 @@ class HseTelegram:
             self.__telegram.send_msg(last_chat_id, f'Что-то пошло не так\n{e}')
             self.__log.input_log(Utils.get_date_now_sec() + ' ' + str(e))
 
+    def insert_users_activate(self, tg_id, username):
+        try:
+            self.__db.insert_users_activate(username, tg_id, 0)
+        except Exception as e:
+            self.__telegram.send_msg(tg_id, self.__MSG_ERROR)
+            self.__log.input_log(Utils.get_date_now_sec() + ' ' + str(e))
+
     def settings(self, last_chat_id):
         try:
             info_user = self.__db.get_all_info_about_user(last_chat_id)
@@ -301,7 +308,7 @@ class HseTelegram:
                                      self.__ERROR_MSG_SETTINGS)
             self.__log.input_log(Utils.get_date_now_sec() + ' ' + str(e))
 
-    def __init__(self, db: DataBasePg, telegram: TelegramApi, email: Email):
+    def __init__(self, db: DataBasePg, telegram: TelegramApi, email):
         self.__db = db
         self.__telegram = telegram
         self.__email = email
