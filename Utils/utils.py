@@ -19,6 +19,13 @@ class Utils:
     }
 
     @staticmethod
+    def get_bool(bool_str: str) -> bool:
+        if bool_str.upper() == 'TRUE':
+            return True
+        else:
+            return False
+
+    @staticmethod
     def get_date_now_sec() -> str:
         return str(datetime.datetime.now())
 
