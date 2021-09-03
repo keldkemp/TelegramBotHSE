@@ -2,6 +2,9 @@
 Базовый файл для запуска всего проекта.
 TODO: Избавиться от дополнительных методов в этом файле
 """
+import datetime
+import subprocess
+import sys
 import threading
 from DB.DataBasePG import DataBasePg
 from Emails.emails import Email
@@ -134,8 +137,14 @@ if __name__ == '__main__':
     offset = None
     call_back_id = None
     admin_id = 453256909
+    date = datetime.datetime.now()
+    subprocess.Popen([sys.executable, 'UpdateTimeTable.py'])
 
     while True:
+        if date < datetime.datetime.now() - datetime.timedelta(hours=1):
+            subprocess.Popen([sys.executable, 'UpdateTimeTable.py'])
+            print('SUCCSES')
+            date = datetime.datetime.now()
         result = telegram.get_updates(offset=offset)
         if not result:
             continue

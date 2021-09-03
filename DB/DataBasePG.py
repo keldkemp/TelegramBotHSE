@@ -418,6 +418,7 @@ class DataBasePg(DataBaseStandart):
         self.conn_open_close(1)
         c = self.CONN.cursor()
         try:
+            c.execute("INSERT INTO classrooms (id, name ) VALUES (1, 'dev')")
             c.execute("INSERT INTO CORPS (id, body) VALUES (1, '1 корпус - ул. Студенческая, 38')")
             c.execute("INSERT INTO CORPS (id, body) VALUES (2, '2 корпус - бульвар Гагарина, 37')")
             c.execute("INSERT INTO CORPS (id, body) VALUES (3, '3 корпус - бульвар Гагарина, 37а')")

@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:12.1
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=hse_tests
+      - POSTGRES_USER=hse_tests
+      - POSTGRES_PASSWORD=hse_tests
+  app:
+    build: ./
+    volumes:
+      - .:/code
+    depends_on:
+      - db

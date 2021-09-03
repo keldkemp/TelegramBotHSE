@@ -5,7 +5,6 @@ import datetime
 import os
 import random
 from os import walk
-from win32com.client import Dispatch
 
 
 class Utils:
@@ -18,17 +17,6 @@ class Utils:
         5: 'Суббота',
         6: 'Воскресенье'
     }
-
-    @staticmethod
-    def convert_xls_to_xlsx(file_name, new_file_name):
-        xlApp = Dispatch('Excel.Application')
-        xlApp.Visible = 0
-        xlApp.DisplayAlerts = False
-        xlApp.Workbooks.Open(os.path.abspath(file_name))  # An xls file.
-        xlApp.ActiveWorkbook.SaveAs(os.getcwd() + '\\' + new_file_name, FileFormat=51,
-                                    ConflictResolution=2)  # 51=xlsx, 2=overwrite
-        xlApp.ActiveWorkbook.Close()
-        xlApp.Quit()
 
     @staticmethod
     def get_date_now_sec() -> str:
@@ -111,7 +99,7 @@ class Utils:
     @staticmethod
     def read_migrations() -> list:
         cwd = os.getcwd()
-        path = cwd + '\\Migrations\\'
+        path = cwd + '/Migrations/'
         migrations_list = []
         for _, _, filenames in walk(path):
             for file in filenames:

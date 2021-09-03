@@ -5,12 +5,10 @@
 import requests
 import pandas as pd
 import os
+import xlrd
 from bs4 import BeautifulSoup
 from datetime import datetime
-from openpyxl.utils import range_boundaries
-from Utils.utils import Utils
 from models.Models import Pars
-from openpyxl import load_workbook
 
 
 class HSE:
@@ -44,24 +42,26 @@ class HSE:
         'I': 9,
     }
 
-    def __merged_cells(self, sheet_name):
-        wbook = load_workbook(filename=self.NEW_FILE_NAME)
-        sheet = wbook[sheet_name]
-        merge = [mcr.coord for mcr in sheet.merged_cells.ranges]
-        for cell_group in merge:
-            min_col, min_row, max_col, max_row = range_boundaries(str(cell_group))
-            top_left_cell_value = sheet.cell(row=min_row, column=min_col).value
-            if top_left_cell_value is not None and top_left_cell_value[0] == '=':
-                min_row = top_left_cell_value[2:len(top_left_cell_value)]
-                min_row = int(''.join(min_row))
-                min_col = self.SHEETS.get(top_left_cell_value[1])
-                top_left_cell_value = sheet.cell(row=min_row, column=min_col).value
-            sheet.unmerge_cells(str(cell_group))
-            for row in sheet.iter_rows(min_col=min_col, min_row=min_row, max_col=max_col, max_row=max_row):
-                for cell in row:
-                    cell.value = top_left_cell_value
-        wbook.save(self.NEW_FILE_NAME)
-        wbook.close()
+    def read_excel(self, path):
+        if path.endswith('xlsx'):
+            excel = pd.ExcelFile(xlrd.open_workbook(path), engine='xlrd')
+        elif path.endswith('xls'):
+            excel = pd.ExcelFile(xlrd.open_workbook(path, formatting_info=True), engine='xlrd')
+        else:
+            raise ValueError("Could not read this type of data")
+        return excel
+
+    def parse_excel(self, excel_file, sheet_name):
+        sheet = excel_file.book.sheet_by_name(sheet_name)
+        df = excel_file.parse(sheet_name=sheet_name, header=None)
+        return sheet, df
+
+    def fill_merged_na(self, sheet, dataframe):
+        for e in sheet.merged_cells:
+            rl, rh, cl, ch = e
+            base_value = sheet.cell_value(rl, cl)
+            dataframe.iloc[rl:rh, cl:ch] = base_value
+        return dataframe
 
     def __get_days(self, t1: list) -> list:
         days = []
@@ -107,7 +107,7 @@ class HSE:
                     pars.append(par1 + ";" + str(time) + ";" + str(s1))
                 flag = False
                 continue
-            if str(s1).find('подразделения') != -1:
+            if str(s1).find('подразделения') != -1 or str(s1).find('РАСПИСАНИЕ УЧЕБНЫХ') != -1:
                 continue
             if str(s1).find('учебного года') != -1:
                 continue
@@ -120,7 +120,7 @@ class HSE:
                 if str(pars).find(str(day[day.find('\n') + 1:])) == -1:
                     pars.append(day[day.find('\n') + 1:] + ';None;None;None;None')
                 continue
-            if str(s1).find('nan') == -1:
+            if str(s1).find('nan') == -1 and str(s1) != '':
                 day = day[day.find('\n') + 1:]
                 par1 = str(day) + ";" + str(s1) + ";" + group_name1
                 flag = True
@@ -147,30 +147,29 @@ class HSE:
         return pars_data
 
     def __parse_xls(self, file_name: str) -> list:
-        # self.convert_xls_to_xlsx_site(file_name)
-        Utils.convert_xls_to_xlsx(file_name, self.NEW_FILE_NAME)
-
-        data_xlsx_sheets = pd.ExcelFile(self.NEW_FILE_NAME)
-        sheets = data_xlsx_sheets.sheet_names
+        excel = self.read_excel(file_name)
+        sheets = excel.sheet_names
         pars_data = []
 
         for sheet in sheets:
-            self.__merged_cells(sheet_name=sheet)
-            data_xlsx = pd.read_excel(self.NEW_FILE_NAME, sheet, index_col=None)
+            _sheet, _excel = self.parse_excel(excel, sheet)
+            dt = self.fill_merged_na(_sheet, _excel)
             data_xls = pd.read_excel(file_name, sheet, index_col=None)
 
             # 0 - всегда дни, 1 - всегда время. Остальные в списке - это группы
-            head_column = list(data_xlsx.columns)
-            # ar_js = json.loads(data_xlsx.to_json())
+            head_column = list(data_xls.columns)
 
             t1 = data_xls[head_column[0]].tolist()
             t2 = data_xls[head_column[1]].tolist()
             head_column.pop(0)
             head_column.pop(0)
             groups = []
+            indx = 1
 
             for col_name in head_column:
-                group = data_xlsx[col_name].tolist()
+                indx += 1
+                group = dt[indx].tolist()
+                group.pop(0)
 
                 if group[1] in groups:
                     continue
@@ -192,7 +191,6 @@ class HSE:
             f.close()
             pars_data.append(self.__parse_xls(self.FILE_NAME))
         os.remove(self.FILE_NAME)
-        os.remove(self.NEW_FILE_NAME)
         return pars_data
 
     def get_urls(self, html) -> list:
