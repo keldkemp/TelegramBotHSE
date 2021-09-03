@@ -33,10 +33,13 @@ class Settings(ABC):
             dc['db_user'] =url_db.username
             dc['db_password'] = url_db.password
             dc['host'] = url_db.hostname
-        dc['login_email'] = os.environ['login_email']
-        dc['password_email'] = os.environ['password_email']
-        dc['host_email'] = os.environ['host_email']
-        dc['port_email'] = os.environ['port_email']
+        if os.environ.get('is_email') is not None:
+            is_email = Utils.get_bool(os.environ['is_email'])
+            if is_email:
+                dc['login_email'] = os.environ['login_email']
+                dc['password_email'] = os.environ['password_email']
+                dc['host_email'] = os.environ['host_email']
+                dc['port_email'] = os.environ['port_email']
         return dc
 
     def __init__(self):
