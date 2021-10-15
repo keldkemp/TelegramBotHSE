@@ -171,6 +171,9 @@ class HSE:
                 group = dt[indx].tolist()
                 group.pop(0)
 
+                if str(group[1]) == 'nan':
+                    continue
+
                 if group[1] in groups:
                     continue
                 groups.append(group[1])
