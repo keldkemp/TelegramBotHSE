@@ -87,7 +87,11 @@ class Utils:
     @staticmethod
     def get_date_from_course(course: str) -> str:
         date_d = datetime.datetime.now()
-        date_d = date_d.replace(year=date_d.year - int(course) + 1)
+        month_d = date_d.month
+        if month_d < 9:
+            date_d = date_d.replace(year=date_d.year - int(course))
+        else:
+            date_d = date_d.replace(year=date_d.year - int(course) + 1)
 
         if len(str(date_d.month)) == 1:
             month = '0' + str(date_d.month)
