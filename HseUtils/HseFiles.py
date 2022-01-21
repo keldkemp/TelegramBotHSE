@@ -6,6 +6,7 @@ import requests
 import pandas as pd
 import os
 import xlrd
+import re
 from bs4 import BeautifulSoup
 from datetime import datetime
 from models.Models import Pars
@@ -142,7 +143,7 @@ class HSE:
                 str_date = str(year) + '-' + str(month) + '-' + str(date[0])
             else:
                 str_date = str(year) + '-' + str(month) + '-' + '0' + str(date[0])
-            pars_data.append(Pars(str_date, par[1], par[2], par[3], par[4]))
+            pars_data.append(Pars(str_date, par[1], re.sub(r'\([^)]*\)', '', par[2]).strip(), par[3], par[4]))
 
         return pars_data
 
