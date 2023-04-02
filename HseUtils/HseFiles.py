@@ -135,6 +135,8 @@ class HSE:
         for par in pars:
             par = par.split(';')
             date = par[0].split()
+            if len(date) <= 1:
+                continue
             month = self.RU_MONTH_VALUES[date[1]]
             year = date_now.year
             if month == '01' and date_now.month == 12:
