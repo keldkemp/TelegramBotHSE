@@ -3,6 +3,8 @@
 Пока не совсем отдельно существующий класс, клавиатура захардкорена, как нибудь сделаю в кастом.
 Для инициализации необходимо передать Токен.
 """
+import traceback
+
 import requests
 import json
 
@@ -43,6 +45,9 @@ class TelegramApi:
             return json.loads(r.text)['result']
         except ConnectionError:
             print('ConnectionError GetUpdates')
+            pass
+        except:
+            print("Unexpected error")
             pass
 
     def answer_callback(self, id):
