@@ -230,3 +230,4 @@ fabric.properties
 /sqlitedb.db
 /settings.json
 /Tests/settings.json
+/data/
